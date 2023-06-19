@@ -24,3 +24,15 @@ Open a terminal by pressing Ctrl+Alt+T or searching for "Terminal" in the applic
 
 # Download WebRtc and follow the Instructions
 https://webrtc.github.io/webrtc-org/native-code/development/
+
+
+# some important links
+https://hsf-training.github.io/hsf-training-cmake-webpage/04-targets/index.html
+https://medium.com/@abdularis/how-to-compile-native-webrtc-from-source-for-android-d0bac8e4c933
+
+
+# Build cmds on linux or ubuntu
+$ mkdir build
+$ cd build
+$ cmake ..
+$ make

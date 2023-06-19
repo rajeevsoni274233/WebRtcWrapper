@@ -1,0 +1,3 @@
+/home/raso274233/Desktop/WebRtcWrapper/build/CMakeFiles/rebuild_cache.dir
+/home/raso274233/Desktop/WebRtcWrapper/build/CMakeFiles/edit_cache.dir
+/home/raso274233/Desktop/WebRtcWrapper/build/CMakeFiles/libWebRtcClientWrapper.dir

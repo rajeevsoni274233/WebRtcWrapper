@@ -4,11 +4,11 @@
  * @ Author: Rajeev Soni
  * @ Create Time: 2022-10-03 18:35:15
  * @ Modified by: Your name
- * @ Modified time: 2023-06-15 12:36:35
+ * @ Modified time: 2023-06-19 12:12:05
  * @ Description:
  */
 
-#include "include/webRTC_client_wrapper.h"
+#include "webRTC_client_wrapper.h"
 
 webRTC_client_wrapper::webRTC_client_wrapper(const std::string& ipaddress, uint16_t port):
     mIpAddress(ipaddress),mPort(port)
@@ -23,30 +23,6 @@ webRTC_client_wrapper::~webRTC_client_wrapper()
     rtc::CleanupSSL();
 }
 
-// static void *webRTC_client_wrapper::thread_fnc(void* args)
-// {
-//     std::cout << __LINE__ << ", " << __PRETTY_FUNCTION__ << std::endl;
-//     long options = (long)args;
-//     std::cout << "inside thread_fnc: "  << options<< std::endl;
-//     std::cout << "pc: " << pc << std::endl;
-//     init(0);
-//     std::cout << "main : After init" << std::endl;
-//     CreatePeerConnection();
-//     std::cout << "main : After CreatePeerConnection" << std::endl;
-//     AddTracks();
-//     std::cout << "main : After AddTracks" << std::endl;
-//     /*
-//     CreateDataChannel();
-//     std::cout << "main : After CreateDataChannel" << std::endl;
-//     */
-//     if(options == 1){
-//         CreateOffer();
-//         std::cout << "main : After CreateOffer" << std::endl;
-//     }
-
-//     return 0;
-// }
-
 static void *webRTC_client_wrapper::receiveMessages(void* args)
 {
     while (true)
@@ -56,11 +32,11 @@ static void *webRTC_client_wrapper::receiveMessages(void* args)
         int bytesReceived = recv(mSocket_fd, buffer, BUFFER_SIZE, 0);
         buffer[bytesReceived]='\0';
         if (bytesReceived < 0) {
-            std::cerr << "Error receiving data\n";
+            std::cerr << __LINE__ << ", " <<  "Error receiving data\n";
             
         }
         if (bytesReceived == 0) {
-            std::cout << "Connection closed by server\n";
+            std::cout << __LINE__ << ", " <<  "Connection closed by server\n";
             break;
             
         }
@@ -90,22 +66,22 @@ void webRTC_client_wrapper::init()
     rtc::InitializeSSL();
 }
 
-void webRTC_client_wrapper::connectToServer(const std::string& ipaddress, uint32_t port)
+void webRTC_client_wrapper::connectToServer()
 {
     std::cout << __LINE__ << ", " << __PRETTY_FUNCTION__ << std::endl;
      mConnectionStatus = ConnectionStatus::CONNECTING;
     mSocket_fd = socket(AF_INET, SOCK_STREAM, 0);
     if (mSocket_fd == -1) {
-        std::cout << "connectToServer::Socket creation error" << std::endl;.
+        std::cout << __LINE__ << ", " <<  "connectToServer::Socket creation error" << std::endl;.
         mConnectionStatus = ConnectionStatus::UNINITIALISED;
         exit(EXIT_FAILURE);
     }
 
     mServerAddress.sin_family = AF_INET;
-    mServerAddress.sin_port = htons(port); //  port number
-    mServerAddress.sin_addr.s_addr = inet_addr(ipaddress); // server address
+    mServerAddress.sin_port = htons(mPort); //  port number
+    mServerAddress.sin_addr.s_addr = inet_addr(mIpAddress); // server address
     if (connect(mSocket_fd, (struct sockaddr*)&mServerAddress, sizeof(mServerAddress)) == -1) {
-       std::cerr << "connectToServer::Error connecting to server\n";
+       std::cerr << __LINE__ << ", " <<  "connectToServer::Error connecting to server\n";
         mConnectionStatus = ConnectionStatus::UNINITIALISED;
         exit(EXIT_FAILURE);
     }
@@ -117,7 +93,7 @@ void webRTC_client_wrapper::connectToServer(const std::string& ipaddress, uint32
     //configuration.enable_dtls_srtp = true;
     configuration.sdp_semantics = webrtc::SdpSemantics::kUnifiedPlan;
     configuration.servers.push_back(ice_server);
-    std::cout << "connectToServer::after push_back 1" << std::endl;
+    std::cout << __LINE__ << ", " <<  "connectToServer::after push_back 1" << std::endl;
 
     //configuration.enable_dtls_srtp = true;
     if (!signaling_thread_.get()) {
@@ -126,7 +102,7 @@ void webRTC_client_wrapper::connectToServer(const std::string& ipaddress, uint32
     }
 
     if(signaling_thread_.get()){
-        std::cout << "connectToServer::signaling_thread_ is good " << std::endl;
+        std::cout << __LINE__ << ", " <<  "connectToServer::signaling_thread_ is good " << std::endl;
     }
 
     peer_connection_factory = webrtc::CreatePeerConnectionFactory(
@@ -148,15 +124,23 @@ void webRTC_client_wrapper::connectToServer(const std::string& ipaddress, uint32
     );
 
     if (!peer_connection_factory) {
-        std::cout << "connectToServer::Error,Failed to initialize PeerConnectionFactory " << std::endl;
+        std::cout << __LINE__ << ", " <<  "connectToServer::Error,Failed to initialize PeerConnectionFactory " << std::endl;
         exit(EXIT_FAILURE);
     }
-    CreatePeerConnection();
-    std::cout << "connectToServer:: After CreatePeerConnection" << std::endl;
+    bool ret = CreatePeerConnection();
+    if (!ret){
+        std::cout << __LINE__ << ", " <<  "connectToServer::Error,Failed to CreatePeerConnection." << std::endl;
+        exit(EXIT_FAILURE); 
+    }
+    std::cout << __LINE__ << ", " <<  "connectToServer:: After CreatePeerConnection" << std::endl;
     addTracks();
-    std::cout << "connectToServer:: After addTracks" << std::endl;
-    CreateOffer();
-    std::cout << "connectToServer::successfully created peerconnection and connected to server" << std::endl;
+    std::cout << __LINE__ << ", " <<  "connectToServer:: After addTracks" << std::endl;
+    ret = CreateOffer();
+    if (!ret){
+        std::cout << __LINE__ << ", " <<  "connectToServer::Error,Failed to CreateOffer." << std::endl;
+        exit(EXIT_FAILURE); 
+    }
+    std::cout << __LINE__ << ", " <<  "connectToServer::successfully created peerconnection and connected to server" << std::endl;
     mConnectionStatus = ConnectionStatus::CONNECTED;
 }
 
@@ -181,7 +165,7 @@ bool webRTC_client_wrapper::createPeerConnection()
 {
     peer_connection = peer_connection_factory->CreatePeerConnection(configuration, nullptr, nullptr, this);
     if(peer_connection == nullptr){
-        std::cout << " CreatePeerConnection null"  << std::endl;
+        std::cout << __LINE__ << ", " <<  " CreatePeerConnection null"  << std::endl;
         return nullptr;
     }
     return peer_connection;
@@ -208,7 +192,7 @@ void webRTC_client_wrapper::addTracks()
                              cricket::AudioOptions()).get()));
     auto result_or_error = peer_connection->AddTrack(audio_track, {kStreamId});
     if (!result_or_error.ok()) {
-      std::cout << "Failed to add audio track to PeerConnection: "
+      std::cout << __LINE__ << ", " <<  "Failed to add audio track to PeerConnection: "
                         << result_or_error.error().message()<< std::endl;
     }
   
@@ -220,11 +204,11 @@ void webRTC_client_wrapper::addTracks()
       
       result_or_error = peer_connection->AddTrack(video_track_, {kStreamId});
       if (!result_or_error.ok()) {
-        std::cout << "Failed to add video track to PeerConnection: "
+        std::cout << __LINE__ << ", " <<  "Failed to add video track to PeerConnection: "
                           << result_or_error.error().message()<< std::endl;
       }
     } else {
-      std::cout << "OpenVideoCaptureDevice failed" << std::endl;
+      std::cout << __LINE__ << ", " <<  "OpenVideoCaptureDevice failed" << std::endl;
     }
 }
 
@@ -232,12 +216,12 @@ bool webRTC_client_wrapper::createOffer()
 {
     if (peer_connection.get() == nullptr) {
         peer_connection_factory = nullptr;
-        std::cout  << ":" << std::this_thread::get_id() << ":"<< "Error on CreatePeerConnection." << std::endl;
-        exit(EXIT_FAILURE);
+        std::cout << __LINE__ << ", threadID: " << std::this_thread::get_id() << ":"<< "Error on CreatePeerConnection." << std::endl;
+        return false;
     }
-    std::cout << "inside CreateOffer " << std::endl;
+    std::cout << __LINE__ << ", " <<  "inside CreateOffer " << std::endl;
     peer_connection->CreateOffer(this, webrtc::PeerConnectionInterface::RTCOfferAnswerOptions());
-    std::cout << "inside CreateOffer 1" << std::endl;
+    std::cout << __LINE__ << ", " <<  "inside CreateOffer 1" << std::endl;
     return true;
 }
 
@@ -256,6 +240,7 @@ void webRTC_client_wrapper::send(const char *msg)
 
 void webRTC_client_wrapper::registerObserver()
 {
+    std::cout << __LINE__ << ", " <<  "webRTC_client_wrapper::registerObserver." << std::endl;
     data_channel->RegisterObserver(this);
 }
 
@@ -264,7 +249,7 @@ std::string webRTC_client_wrapper::truncateReadMessage(std::string msg)
     std::string msglp;
     if(msg[0] == '\0')
     {
-        std::cout<<"webRTC_client_wrapper::truncateReadMessage : empty string " << std::endl;
+        std::cout << __LINE__ << ", " <<  "webRTC_client_wrapper::truncateReadMessage : empty string " << std::endl;
         return "";
     }
     for(int i = 0; i < msg.length(); i++)
@@ -276,7 +261,7 @@ std::string webRTC_client_wrapper::truncateReadMessage(std::string msg)
                 
                 msglp += msg[j];
             }
-            std::cout<<"webRTC_client_wrapper::truncateReadMessage returns : " << msglp<< std::endl;
+            std::cout << __LINE__ << ", " <<  "webRTC_client_wrapper::truncateReadMessage returns : " << msglp<< std::endl;
             break;
         }
     }
@@ -291,7 +276,7 @@ void webRTC_client_wrapper::OnMessageFromPeer(std::string message)
     while(message.length() != 0)
     {
         if (!reader.parse(message, jmessage)) {
-            std::cout << "Received unknown message. " << message << std::endl;
+            std::cout << __LINE__ << ", " <<  "Received unknown message. " << message << std::endl;
             return;
         }
         std::string type_str;
@@ -304,26 +289,26 @@ void webRTC_client_wrapper::OnMessageFromPeer(std::string message)
             absl::optional<webrtc::SdpType> type_maybe =
                 webrtc::SdpTypeFromString(type_str);
             if (!type_maybe) {
-                std::cout << "Unknown SDP type: " << type_str;
+                std::cout << __LINE__ << ", " <<  "Unknown SDP type: " << type_str;
                 return;
             }
             webrtc::SdpType type = *type_maybe;
             std::string sdp;
             if (!rtc::GetStringFromJsonObject(jmessage, kSessionDescriptionSdpName,
                                                 &sdp)) {
-                std::cout << "Can't parse received session description message." << std::endl;
+                std::cout << __LINE__ << ", " <<  "Can't parse received session description message." << std::endl;
                 return;
             }
             webrtc::SdpParseError error;
             std::unique_ptr<webrtc::SessionDescriptionInterface> session_description =
                 webrtc::CreateSessionDescription(type, sdp, &error);
             if (!session_description) {
-                std::cout << "Can't parse received session description message. "
+                std::cout << __LINE__ << ", " <<  "Can't parse received session description message. "
                                     "SdpParseError was: "
                                 << error.description << std::endl;
                 return;
             }
-            std::cout << " Received session description :" << sdp << std::endl;
+            std::cout << __LINE__ << ", " <<  " Received session description :" << sdp << std::endl;
             peer_connection->SetRemoteDescription(
                 SetSessionDescriptionObserver::Create(),
                 session_description.release());
@@ -333,7 +318,7 @@ void webRTC_client_wrapper::OnMessageFromPeer(std::string message)
             }
         } else 
         {
-            std::cout << "Received ice = " << jmessage << std::endl;
+            std::cout << __LINE__ << ", " <<  "Received ice = " << jmessage << std::endl;
             std::string sdp_mid;
             int sdp_mlineindex = 0;
             std::string sdp;
@@ -342,26 +327,26 @@ void webRTC_client_wrapper::OnMessageFromPeer(std::string message)
                 !rtc::GetIntFromJsonObject(jmessage, kCandidateSdpMlineIndexName,
                                             &sdp_mlineindex) ||
                 !rtc::GetStringFromJsonObject(jmessage, kCandidateSdpName, &sdp)) {
-                std::cout << "Can't parse received message."<< std::endl;
+                std::cout << __LINE__ << ", " <<  "Can't parse received message."<< std::endl;
                 return;
             }
             webrtc::SdpParseError error;
             std::unique_ptr<webrtc::IceCandidateInterface> candidate(
                 webrtc::CreateIceCandidate(sdp_mid, sdp_mlineindex, sdp, &error));
-            std::cout << "sdp_mid = " << sdp_mid << "sdp_mlineindex = " << sdp_mlineindex << "sdp = " << sdp << std::endl;
+            std::cout << __LINE__ << ", " <<  "sdp_mid = " << sdp_mid << "sdp_mlineindex = " << sdp_mlineindex << "sdp = " << sdp << std::endl;
             if (!candidate.get()) {
-                std::cout << "Can't parse received candidate message. "
+                std::cout << __LINE__ << ", " <<  "Can't parse received candidate message. "
                                     "SdpParseError was: "
                                 << error.description << std::endl;
                 return;
             }
             if (!peer_connection->AddIceCandidate(candidate.get())) {
-                std::cout << "Failed to apply the received candidate" << std::endl;
+                std::cout << __LINE__ << ", " <<  "Failed to apply the received candidate" << std::endl;
             }
-            std::cout << " inside OnMessageFromPeer Received candidate :" << message << std::endl;
+            std::cout << __LINE__ << ", " <<  " inside OnMessageFromPeer Received candidate :" << message << std::endl;
         }
         message = TruncateReadMessage(message);
-        std::cout << "Truncated message : " << message << std::endl;
+        std::cout << __LINE__ << ", " <<  "Truncated message : " << message << std::endl;
     }
 }
 
@@ -374,7 +359,8 @@ void webRTC_client_wrapper::OnStateChange()
 {
     std::cout << __LINE__ << ", " << __PRETTY_FUNCTION__ << std::endl;
     assert(data_channel);
-    std::cout << "DataChannel OnStateChange() state = " << data_channel->state() << std::endl;
+    std::cout << __LINE__ << ", " <<  "DataChannel OnStateChange() state = " << data_channel->state() << std::endl;
+    data_channel->RegisterObserver(this);
     // based on the datachannel state we will change our internal state
     // mConnectionStatus = static_cast<int32_t>(data_channel->state());
 }
@@ -383,8 +369,8 @@ void webRTC_client_wrapper::OnMessage(const webrtc::DataBuffer& buffer)
 {
     std::cout << __LINE__ << ", " << __PRETTY_FUNCTION__ << std::endl;
     //callback to send the video data to client binary
-    // mCallback->receiveData(buffer);
-    std::cout << "[info] message received :" << std::string(buffer.data.data<char>(), buffer.data.size()) << std::endl;
+    mCallback->receiveData(buffer);
+    std::cout << __LINE__ << ", " <<  "[info] message received :" << std::string(buffer.data.data<char>(), buffer.data.size()) << std::endl;
 }
 
 /*
@@ -402,7 +388,7 @@ void webRTC_client_wrapper::OnDataChannel(rtc::scoped_refptr<webrtc::DataChannel
     std::cout << __LINE__ << ", " << __PRETTY_FUNCTION__ << std::endl;
     data_channel = channel;
     data_channel->RegisterObserver(this);
-    std::cout << "OnDataChannel end" << std::endl;
+    std::cout << __LINE__ << ", " <<  "OnDataChannel end" << std::endl;
 }
 
 void webRTC_client_wrapper::OnRenegotiationNeeded()
@@ -415,10 +401,7 @@ void webRTC_client_wrapper::OnIceConnectionChange(webrtc::PeerConnectionInterfac
     std::cout << __LINE__ << ", " << __PRETTY_FUNCTION__ << std::endl;
     if(new_state == webrtc::PeerConnectionInterface::kIceConnectionCompleted)
     {
-        std::cout << "OnIceConnectionChange =  kIceConnectionCompleted";
-        //data_channel->RegisterObserver(this);
-        // std::cout << "OnIceConnectionChange datachannel registered";
-
+        std::cout << __LINE__ << ", " <<  "OnIceConnectionChange =  kIceConnectionCompleted";
     }
 }
 
@@ -430,7 +413,7 @@ void webRTC_client_wrapper::OnIceGatheringChange(webrtc::PeerConnectionInterface
 void webRTC_client_wrapper::OnIceCandidate(const webrtc::IceCandidateInterface* candidate)
 {
     std::cout << __LINE__ << ", " << __PRETTY_FUNCTION__ << std::endl;
-    std::cout << "OnIceCandidate : " <<  candidate->sdp_mline_index() << std::endl;
+    std::cout << __LINE__ << ", " <<  "OnIceCandidate : " <<  candidate->sdp_mline_index() << std::endl;
 
     Json::StyledWriter writer;
     Json::Value jmessage;
@@ -439,7 +422,7 @@ void webRTC_client_wrapper::OnIceCandidate(const webrtc::IceCandidateInterface* 
     jmessage[kCandidateSdpMlineIndexName] = candidate->sdp_mline_index();
     std::string sdp;
     if (!candidate->ToString(&sdp)) {
-      std::cout << "Failed to serialize candidate" << std::endl;
+      std::cout << __LINE__ << ", " <<  "Failed to serialize candidate" << std::endl;
       return;
     }
     jmessage[kCandidateSdpName] = sdp;
@@ -457,7 +440,7 @@ void webRTC_client_wrapper::OnAddTrack(rtc::scoped_refptr<webrtc::RtpReceiverInt
         const std::vector<rtc::scoped_refptr<webrtc::MediaStreamInterface>>& streams)
 {
     std::cout << __LINE__ << ", " << __PRETTY_FUNCTION__ << std::endl;
-    std::cout << "TRACK RECEIVED"  << std::endl;
+    std::cout << __LINE__ << ", " <<  "TRACK RECEIVED"  << std::endl;
     if (receiver->track()->kind() == webrtc::MediaStreamTrackInterface::kVideoKind) {
         // Cast the track to a video track
         rtc::scoped_refptr<webrtc::VideoTrackInterface> video_track(
@@ -485,7 +468,7 @@ void webRTC_client_wrapper::OnSuccess(webrtc::SessionDescriptionInterface *desc)
     std::cout << __LINE__ << ", " << __PRETTY_FUNCTION__ << std::endl;
     if(desc){
         peer_connection->SetLocalDescription(SetSessionDescriptionObserver::Create(), desc);
-        std::cout << "Local desc set" << std::endl;
+        std::cout << __LINE__ << ", " <<  "Local desc set" << std::endl;
         std::string sdp,rsdp;
         desc->ToString(&sdp);
         Json::StyledWriter writer;
@@ -494,7 +477,7 @@ void webRTC_client_wrapper::OnSuccess(webrtc::SessionDescriptionInterface *desc)
         jmessage[kSessionDescriptionSdpName] = sdp;
         std::string jsonstring = writer.write(jmessage);
         const char* offer = jsonstring.c_str();
-        std::cout << "offer :" << offer <<std::endl;
+        std::cout << __LINE__ << ", " <<  "offer :" << offer <<std::endl;
         Send(offer);
         //send(mSocket_fd, offer, strlen(offer), 0);
     }
@@ -503,7 +486,7 @@ void webRTC_client_wrapper::OnSuccess(webrtc::SessionDescriptionInterface *desc)
 void webRTC_client_wrapper::OnFailure(webrtc::RTCError error)
 {
     std::cout << __LINE__ << ", " << __PRETTY_FUNCTION__ << std::endl;
-    std::cout<<"[error] err:"<<error.message()<<std::endl;
+    std::cout << __LINE__ << ", " <<  "[error] err:"<<error.message()<<std::endl;
     assert(false);
 }
 

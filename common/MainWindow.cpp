@@ -1,4 +1,4 @@
-#include "include/MainWindow.h"
+#include "inc/MainWindow.h"
 
 gboolean OnDestroyedCallback(GtkWidget* widget, GdkEvent* event, gpointer data) {
     reinterpret_cast<GtkMainWnd*>(data)->OnDestroyed(widget, event);

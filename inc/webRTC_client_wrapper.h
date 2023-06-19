@@ -4,7 +4,7 @@
  * @ Author: Rajeev Soni
  * @ Create Time: 2022-10-03 18:35:15
  * @ Modified by: Your name
- * @ Modified time: 2023-06-14 16:44:41
+ * @ Modified time: 2023-06-19 14:23:32
  * @ Description:
  */
 #ifndef WEBRTC_CLIENT_WRAPPER_H_
@@ -22,7 +22,7 @@
 #include <sys/socket.h>
 
 #include "rtc_base/third_party/sigslot/sigslot.h"
-#include "webRTC_wrapper_client_ callback.h"
+#include "webRTC_wrapper_client_callback.h"
 #include "rtc_base/strings/json.h"
 #include "webRTC_utility.h"
 #include "test_code.h"
@@ -40,7 +40,7 @@ public:
     //public APIs
     void registerCallback(const std::shared_ptr<webRTC_wrapper_client_callback>& callback);
     void init();
-    void connectToServer(const std::string& ipaddress, uint32_t port);
+    void connectToServer();
     void disconnectFromServer();
     ConnectionStatus getConnectionStatus() const;
 

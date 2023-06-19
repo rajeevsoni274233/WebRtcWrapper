@@ -1,0 +1,2 @@
+/usr/bin/ar qc liblibWebRtcClientWrapper.a  CMakeFiles/libWebRtcClientWrapper.dir/client/webRTC_client_wrapper.cpp.o
+/usr/bin/ranlib liblibWebRtcClientWrapper.a
